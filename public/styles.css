@@ -1,26 +1,28 @@
 /* ============================================================
-   MLB Live Dash — Clean Sports Broadcast Theme
+   MLB Live Dash — Soft, Readable Theme
    ============================================================ */
 
 :root {
-  --bg-body: #1c1c1e;
-  --bg-card: #2c2c2e;
-  --bg-elevated: #343436;
-  --bg-hover: #3a3a3c;
-  --bg-inset: #232325;
-  --border: #444446;
-  --border-light: #555557;
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --text-muted: #8e8e93;
-  --red: #c8102e;
-  --red-light: #e8334d;
-  --green: #30d158;
-  --yellow: #ffd60a;
-  --blue: #5ac8fa;
-  --gold: #e8a33d;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  --bg-body: #1e2028;
+  --bg-card: #272a33;
+  --bg-elevated: #2f323c;
+  --bg-hover: #353841;
+  --bg-inset: #22242c;
+  --border: #3a3d47;
+  --border-light: #4a4d57;
+  --text: #e8e8ea;
+  --text-secondary: #b0b3bc;
+  --text-muted: #787b86;
+  --accent: #5b8cc9;
+  --accent-soft: #4a7ab5;
+  --accent-bg: rgba(91, 140, 201, 0.12);
+  --green: #5cb87a;
+  --green-bg: rgba(92, 184, 122, 0.12);
+  --yellow: #d4a94e;
+  --yellow-bg: rgba(212, 169, 78, 0.12);
+  --red-soft: #c97070;
+  --red-bg: rgba(201, 112, 112, 0.12);
+  --gold: #d4a94e;
   --radius: 6px;
   --radius-lg: 8px;
 }
@@ -28,17 +30,19 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: var(--font-sans);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--bg-body);
-  color: var(--text-primary);
+  color: var(--text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  font-size: 14px;
 }
 
 /* ---- Header ---- */
 header {
-  background: var(--red);
-  padding: 0 28px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
   height: 48px;
   display: flex;
   justify-content: space-between;
@@ -59,11 +63,9 @@ header {
 .logo-icon { font-size: 1.1rem; }
 
 .logo h1 {
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #fff;
-  text-transform: uppercase;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .header-right {
@@ -76,20 +78,21 @@ header {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(0, 0, 0, 0.25);
-  border: none;
-  color: #fff;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   padding: 5px 12px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.78rem;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  transition: background 0.15s;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  font-family: inherit;
 }
 
 #refresh-btn:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--bg-hover);
+  color: var(--text);
 }
 
 #refresh-btn:active svg {
@@ -102,9 +105,8 @@ header {
 }
 
 #last-update {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 /* ---- Main ---- */
@@ -123,9 +125,8 @@ main {
 }
 
 .section-header h2 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 /* ---- Date Picker ---- */
@@ -141,7 +142,7 @@ main {
   justify-content: center;
   width: 30px;
   height: 30px;
-  background: var(--bg-card);
+  background: var(--bg-elevated);
   color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -154,17 +155,17 @@ main {
 }
 
 #game-date {
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: var(--bg-elevated);
+  color: var(--text);
   border: 1px solid var(--border);
   padding: 5px 10px;
   border-radius: var(--radius);
   font-size: 0.85rem;
-  font-family: var(--font-mono);
+  font-family: inherit;
 }
 
 #game-date::-webkit-calendar-picker-indicator {
-  filter: invert(0.8);
+  filter: invert(0.7);
 }
 
 /* ---- Game Cards ---- */
@@ -199,10 +200,10 @@ main {
 }
 
 .game-card .card-status {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: var(--text-muted);
 }
 
@@ -211,9 +212,8 @@ main {
 }
 
 .game-card .card-time {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
-  font-family: var(--font-mono);
 }
 
 .game-card .card-teams {
@@ -234,7 +234,6 @@ main {
 }
 
 .game-card .card-team-score {
-  font-family: var(--font-mono);
   font-weight: 700;
   font-size: 1.1rem;
   min-width: 24px;
@@ -243,7 +242,7 @@ main {
 
 .game-card .card-team-row.winning .card-team-name,
 .game-card .card-team-row.winning .card-team-score {
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .game-card .card-team-row.losing .card-team-name,
@@ -266,10 +265,10 @@ main {
   padding: 6px 12px;
   border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.8rem;
-  font-family: var(--font-sans);
+  font-size: 0.82rem;
   font-weight: 500;
   transition: background 0.15s;
+  font-family: inherit;
 }
 
 #back-btn:hover {
@@ -304,14 +303,13 @@ main {
 }
 
 .team-score .team-name {
-  font-size: 1.3rem;
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .team-score .score {
-  font-family: var(--font-mono);
-  font-size: 2.6rem;
-  font-weight: 900;
+  font-size: 2.4rem;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -333,19 +331,17 @@ main {
 
 #inning {
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--green);
-  text-transform: uppercase;
 }
 
 #count {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
 #outs {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -371,8 +367,7 @@ main {
 .linescore-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   text-align: center;
 }
 
@@ -384,7 +379,7 @@ main {
 .linescore-table th {
   color: var(--text-muted);
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   border-bottom: 2px solid var(--border);
 }
 
@@ -394,13 +389,13 @@ main {
 }
 
 .linescore-table .current-inning {
-  color: var(--text-primary);
+  color: var(--text);
   font-weight: 700;
 }
 
 .linescore-table .totals {
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 /* ---- Matchup Bar ---- */
@@ -424,20 +419,21 @@ main {
 }
 
 .matchup-label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
   color: var(--text-muted);
+  text-transform: uppercase;
 }
 
 .matchup-name {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .matchup-vs {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -461,15 +457,16 @@ main {
 
 .panel-header {
   padding: 10px 16px;
-  background: var(--red);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
 }
 
 .panel-header h3 {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .panel > div:last-child {
@@ -491,38 +488,37 @@ main {
   padding: 10px 12px;
   background: var(--bg-inset);
   border-radius: var(--radius);
-  min-width: 80px;
+  min-width: 75px;
   flex: 1;
 }
 
 .stat-value {
-  font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   line-height: 1.2;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .stat-label {
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 500;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   margin-top: 3px;
 }
 
 .stat-good { color: var(--green) !important; }
 .stat-warn { color: var(--yellow) !important; }
-.stat-bad { color: var(--red-light) !important; }
+.stat-bad { color: var(--red-soft) !important; }
 
 /* ---- Pitch Type Bars ---- */
 .pitch-section-title {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   margin: 14px 0 8px;
 }
 
@@ -531,15 +527,13 @@ main {
   align-items: center;
   gap: 8px;
   margin-bottom: 5px;
-  font-size: 0.82rem;
 }
 
 .pitch-type-bar .label {
-  width: 90px;
+  width: 100px;
   text-align: right;
   color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
 }
 
 .pitch-type-bar .bar-bg {
@@ -557,10 +551,8 @@ main {
 }
 
 .pitch-type-bar .value {
-  width: 70px;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 0.78rem;
+  width: 80px;
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
@@ -568,24 +560,24 @@ main {
 .stat-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.84rem;
+  font-size: 0.85rem;
 }
 
 .stat-table th {
   padding: 8px 10px;
   text-align: left;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   border-bottom: 2px solid var(--border-light);
 }
 
 .stat-table td {
   padding: 9px 10px;
   text-align: left;
-  color: var(--text-primary);
+  color: var(--text);
   border-bottom: 1px solid var(--border);
 }
 
@@ -595,6 +587,21 @@ main {
 
 .stat-table tbody tr:hover {
   background: var(--bg-hover);
+}
+
+/* ---- Team Divider in hitter table ---- */
+.team-divider td {
+  padding: 8px 10px !important;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border) !important;
+  letter-spacing: 0.3px;
+}
+
+.team-divider:hover {
+  background: var(--accent-bg) !important;
 }
 
 /* ---- Expandable Pitcher Row ---- */
@@ -630,7 +637,7 @@ main {
 .pitcher-detail-row td {
   padding: 0 !important;
   background: var(--bg-elevated);
-  border-bottom: 2px solid var(--red) !important;
+  border-bottom: 2px solid var(--accent-soft) !important;
 }
 
 .pitcher-detail-content {
@@ -638,44 +645,41 @@ main {
 }
 
 .detail-section h4 {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   margin-bottom: 6px;
 }
 
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
 }
 
 .detail-table th {
   padding: 5px 7px;
   text-align: center;
-  font-size: 0.64rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-family: var(--font-sans);
+  letter-spacing: 0.2px;
   border-bottom: 2px solid var(--border-light);
 }
 
 .detail-table td {
   padding: 6px 7px;
   text-align: center;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
+  color: var(--text);
+  font-size: 0.82rem;
   border-bottom: 1px solid var(--border);
 }
 
 .detail-table td:first-child {
   text-align: left;
-  font-family: var(--font-sans);
   font-weight: 500;
 }
 
@@ -683,28 +687,26 @@ main {
 .risp-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.84rem;
+  font-size: 0.85rem;
 }
 
 .risp-table th {
   padding: 8px 10px;
   text-align: left;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   border-bottom: 2px solid var(--border-light);
 }
 
 .risp-table td {
   padding: 9px 10px;
   text-align: left;
-  color: var(--text-primary);
+  color: var(--text);
   border-bottom: 1px solid var(--border);
 }
-
-.risp-table td.risp-hits { font-family: var(--font-mono); font-weight: 600; }
 
 /* ---- No Data ---- */
 .no-data {
@@ -721,6 +723,6 @@ main {
 
   #stat-panels { grid-template-columns: 1fr; }
   #score-header { gap: 20px; }
-  .team-score .score { font-size: 2rem; }
+  .team-score .score { font-size: 1.8rem; }
   .team-score .team-name { font-size: 1rem; }
 }

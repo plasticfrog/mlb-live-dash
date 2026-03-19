@@ -304,7 +304,14 @@ function computeAndRenderStats(data) {
     }
 
     if (!hitterMap[batterId]) {
-      hitterMap[batterId] = { name: batterName, pitchesSeen: 0, pitchTypesSeen: {} };
+      hitterMap[batterId] = {
+        name: batterName,
+        teamId: batterTeamId,
+        pitchesSeen: 0,
+        atBats: 0,
+        hits: 0,
+        pitchTypesSeen: {}
+      };
     }
 
     const p = pitcherMap[pitcherId];
@@ -403,6 +410,12 @@ function computeAndRenderStats(data) {
       p.pitchTypeStrikeouts[lastPitchType] = (p.pitchTypeStrikeouts[lastPitchType] || 0) + 1;
     }
 
+    // Hitter AB/Hit tracking
+    if (isAB) {
+      hitter.atBats++;
+      if (isHit) hitter.hits++;
+    }
+
     // RISP
     if (hasRisp && isAB) {
       p.rispAB++;
@@ -416,7 +429,7 @@ function computeAndRenderStats(data) {
   renderHitterPanel(hitterMap, data);
   renderRISP(pitcherMap, teamRisp, data);
   renderAllPitchersSummary(pitcherMap);
-  renderAllHittersSummary(hitterMap);
+  renderAllHittersSummary(hitterMap, data);
 }
 
 function getBatterTeamId(play, data) {
@@ -500,7 +513,7 @@ function renderPitcherPanel(pitcherMap, data) {
         <span class="stat-label">RISP</span>
       </div>
     </div>
-    ${p.strikeouts > 0 ? `<div class="pitch-section-title">Strikeout Pitches (${p.strikeouts} K)</div><div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px; font-family: var(--font-mono);">${kPitchHtml}</div>` : ''}
+    ${p.strikeouts > 0 ? `<div class="pitch-section-title">Strikeout Pitches (${p.strikeouts} K)</div><div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px; font-family: inherit;">${kPitchHtml}</div>` : ''}
     <div class="pitch-section-title">Hit Rate by Pitch Type (H-AB) (Thrown)</div>
     ${pitchTypeHtml || '<div class="no-data">No pitch data</div>'}
   `;
@@ -530,7 +543,7 @@ function renderHitterPanel(hitterMap, data) {
       <div class="pitch-type-bar">
         <span class="label">${type}</span>
         <div class="bar-bg">
-          <div class="bar-fill" style="width: ${pct}%; background: var(--accent);"></div>
+          <div class="bar-fill" style="width: ${pct}%; background: var(--accent-soft);"></div>
         </div>
         <span class="value">${count} (${pct}%)</span>
       </div>`;
@@ -658,7 +671,7 @@ function buildPitcherDetail(p) {
     const kTypes = Object.keys(p.pitchTypeStrikeouts).sort((a, b) => p.pitchTypeStrikeouts[b] - p.pitchTypeStrikeouts[a]);
     kSummary = `<div style="margin-bottom: 12px;">
       <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Strikeout Pitches (${p.strikeouts} K)</span>
-      <div style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 4px; font-family: var(--font-mono);">
+      <div style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 4px; font-family: inherit;">
         ${kTypes.map(t => `${t}: ${p.pitchTypeStrikeouts[t]}`).join(' &nbsp;|&nbsp; ')}
       </div>
     </div>`;
@@ -739,30 +752,55 @@ window.togglePitcherDetail = togglePitcherDetail;
 // ALL HITTERS
 // ============================================================
 
-function renderAllHittersSummary(hitterMap) {
+function renderAllHittersSummary(hitterMap, data) {
   const container = document.getElementById('all-hitters-content');
-  const hitters = Object.values(hitterMap).sort((a, b) => b.pitchesSeen - a.pitchesSeen);
+  const hitters = Object.values(hitterMap);
 
   if (hitters.length === 0) {
     container.innerHTML = '<div class="no-data">No hitter data yet</div>';
     return;
   }
 
-  let rows = hitters.map(h => {
-    const types = Object.keys(h.pitchTypesSeen).sort((a, b) => h.pitchTypesSeen[b] - h.pitchTypesSeen[a]);
-    const summary = types.map(t => `${t}: ${h.pitchTypesSeen[t]}`).join(', ');
-    return `<tr>
-      <td>${h.name}</td>
-      <td>${h.pitchesSeen}</td>
-      <td style="font-size:0.75rem">${summary || '--'}</td>
-    </tr>`;
-  }).join('');
+  const awayId = data.gameData?.teams?.away?.id;
+  const homeId = data.gameData?.teams?.home?.id;
+  const awayName = data.gameData?.teams?.away?.name || 'Away';
+  const homeName = data.gameData?.teams?.home?.name || 'Home';
 
-  container.innerHTML = `
-    <table class="stat-table">
-      <thead><tr><th>Hitter</th><th>Pitches</th><th>By Type</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  const awayHitters = hitters.filter(h => h.teamId === awayId).sort((a, b) => b.pitchesSeen - a.pitchesSeen);
+  const homeHitters = hitters.filter(h => h.teamId === homeId).sort((a, b) => b.pitchesSeen - a.pitchesSeen);
+  const otherHitters = hitters.filter(h => h.teamId !== awayId && h.teamId !== homeId).sort((a, b) => b.pitchesSeen - a.pitchesSeen);
+
+  function buildRows(list) {
+    return list.map(h => {
+      const avg = h.atBats > 0 ? (h.hits / h.atBats).toFixed(3) : '.000';
+      const types = Object.keys(h.pitchTypesSeen).sort((a, b) => h.pitchTypesSeen[b] - h.pitchTypesSeen[a]);
+      const summary = types.map(t => `${t}: ${h.pitchTypesSeen[t]}`).join(', ');
+      return `<tr>
+        <td>${h.name}</td>
+        <td>${h.atBats}</td>
+        <td>${h.hits}-${h.atBats} (${avg})</td>
+        <td>${h.pitchesSeen}</td>
+        <td style="font-size:0.8rem">${summary || '--'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  let html = `<table class="stat-table">
+    <thead><tr><th>Hitter</th><th>AB</th><th>H-AB (AVG)</th><th>Pitches</th><th>Pitches by Type</th></tr></thead>
+    <tbody>`;
+
+  html += `<tr class="team-divider"><td colspan="5">${awayName}</td></tr>`;
+  html += buildRows(awayHitters);
+  html += `<tr class="team-divider"><td colspan="5">${homeName}</td></tr>`;
+  html += buildRows(homeHitters);
+
+  if (otherHitters.length > 0) {
+    html += `<tr class="team-divider"><td colspan="5">Other</td></tr>`;
+    html += buildRows(otherHitters);
+  }
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
 // ---- Init ----
