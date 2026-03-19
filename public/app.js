@@ -2,6 +2,46 @@
 // MLB Live Dash — Frontend Application
 // ============================================================
 
+// MLB team colors — brightened for dark backgrounds
+const TEAM_COLORS = {
+  108: '#e4404e', // LAA Angels
+  109: '#e4404e', // AZ Diamondbacks
+  110: '#f56b3e', // BAL Orioles
+  111: '#e44a52', // BOS Red Sox
+  112: '#3a7bdb', // CHC Cubs
+  113: '#e44a4a', // CIN Reds
+  114: '#3a7bdb', // CLE Guardians
+  115: '#7b6db5', // COL Rockies
+  116: '#f56b3e', // DET Tigers
+  117: '#f56b3e', // HOU Astros
+  118: '#5b9bd5', // KC Royals
+  119: '#5b9bd5', // LAD Dodgers
+  120: '#e44a52', // WSH Nationals
+  121: '#f56b3e', // NYM Mets
+  133: '#50a86e', // OAK Athletics
+  134: '#f5c842', // PIT Pirates
+  135: '#8b6f3a', // SD Padres (tan/brown)
+  136: '#3a8e8e', // SEA Mariners (teal)
+  137: '#f56b3e', // SF Giants
+  138: '#e44a52', // STL Cardinals
+  139: '#6bb5e0', // TB Rays
+  140: '#5b9bd5', // TEX Rangers
+  141: '#5b9bd5', // TOR Blue Jays
+  142: '#e44a52', // MIN Twins
+  143: '#e44a52', // PHI Phillies
+  144: '#e44a52', // ATL Braves
+  145: '#8e8e8e', // CWS White Sox
+  146: '#55c9e8', // MIA Marlins
+  147: '#5b7b9b', // NYY Yankees (steel blue)
+  158: '#d4a94e', // MIL Brewers (gold)
+  160: '#50a86e', // OAK Athletics
+};
+
+// Fallback: get a team color, default to accent
+function getTeamColor(teamId) {
+  return TEAM_COLORS[teamId] || '#5b8cc9';
+}
+
 let currentGamePk = null;
 let refreshInterval = null;
 const REFRESH_MS = 16000;
@@ -187,8 +227,15 @@ function renderScoreboard(data) {
   const gd = data.gameData;
   const ls = data.liveData?.linescore;
 
-  document.getElementById('away-name').textContent = gd?.teams?.away?.abbreviation || '';
-  document.getElementById('home-name').textContent = gd?.teams?.home?.abbreviation || '';
+  const awayAbbr = gd?.teams?.away?.abbreviation || '';
+  const homeAbbr = gd?.teams?.home?.abbreviation || '';
+  const awayTeamId = gd?.teams?.away?.id;
+  const homeTeamId = gd?.teams?.home?.id;
+
+  document.getElementById('away-name').textContent = awayAbbr;
+  document.getElementById('home-name').textContent = homeAbbr;
+  document.getElementById('away-name').style.color = getTeamColor(awayTeamId);
+  document.getElementById('home-name').style.color = getTeamColor(homeTeamId);
   document.getElementById('away-score').textContent = ls?.teams?.away?.runs ?? 0;
   document.getElementById('home-score').textContent = ls?.teams?.home?.runs ?? 0;
 
@@ -303,12 +350,15 @@ function computeAndRenderStats(data) {
       };
     }
 
+    const batSide = play.matchup?.batSide?.code || '?';
+
     if (!hitterMap[batterId]) {
       hitterMap[batterId] = {
         name: batterName,
+        batSide: batSide,
         teamId: batterTeamId,
         pitchesSeen: 0,
-        atBats: 0,
+        pa: 0,
         hits: 0,
         pitchTypesSeen: {}
       };
@@ -410,9 +460,9 @@ function computeAndRenderStats(data) {
       p.pitchTypeStrikeouts[lastPitchType] = (p.pitchTypeStrikeouts[lastPitchType] || 0) + 1;
     }
 
-    // Hitter AB/Hit tracking
-    if (isAB) {
-      hitter.atBats++;
+    // Hitter PA/Hit tracking - PA includes walks, HBP, sac, etc.
+    if (result !== '') {
+      hitter.pa++;
       if (isHit) hitter.hits++;
     }
 
@@ -569,16 +619,20 @@ function renderRISP(pitcherMap, teamRisp, data) {
   const container = document.getElementById('risp-content');
   const awayAbbr = data.gameData?.teams?.away?.abbreviation || 'AWAY';
   const homeAbbr = data.gameData?.teams?.home?.abbreviation || 'HOME';
+  const awayId = data.gameData?.teams?.away?.id;
+  const homeId = data.gameData?.teams?.home?.id;
+  const awayColor = getTeamColor(awayId);
+  const homeColor = getTeamColor(homeId);
 
   const pitchers = Object.values(pitcherMap).filter(p => p.rispAB > 0);
 
   let teamHtml = `
     <div class="stat-row" style="margin-bottom: 16px;">
-      <div class="stat-box">
+      <div class="stat-box" style="border-left: 3px solid ${awayColor};">
         <span class="stat-value">${teamRisp.away.ab > 0 ? teamRisp.away.hits + '/' + teamRisp.away.ab : '0/0'}</span>
         <span class="stat-label">${awayAbbr} RISP</span>
       </div>
-      <div class="stat-box">
+      <div class="stat-box" style="border-left: 3px solid ${homeColor};">
         <span class="stat-value">${teamRisp.home.ab > 0 ? teamRisp.home.hits + '/' + teamRisp.home.ab : '0/0'}</span>
         <span class="stat-label">${homeAbbr} RISP</span>
       </div>
@@ -765,20 +819,21 @@ function renderAllHittersSummary(hitterMap, data) {
   const homeId = data.gameData?.teams?.home?.id;
   const awayName = data.gameData?.teams?.away?.name || 'Away';
   const homeName = data.gameData?.teams?.home?.name || 'Home';
+  const awayColor = getTeamColor(awayId);
+  const homeColor = getTeamColor(homeId);
 
   const awayHitters = hitters.filter(h => h.teamId === awayId).sort((a, b) => b.pitchesSeen - a.pitchesSeen);
   const homeHitters = hitters.filter(h => h.teamId === homeId).sort((a, b) => b.pitchesSeen - a.pitchesSeen);
-  const otherHitters = hitters.filter(h => h.teamId !== awayId && h.teamId !== homeId).sort((a, b) => b.pitchesSeen - a.pitchesSeen);
 
   function buildRows(list) {
     return list.map(h => {
-      const avg = h.atBats > 0 ? (h.hits / h.atBats).toFixed(3) : '.000';
+      const side = h.batSide === 'S' ? 'S' : h.batSide || '?';
       const types = Object.keys(h.pitchTypesSeen).sort((a, b) => h.pitchTypesSeen[b] - h.pitchTypesSeen[a]);
       const summary = types.map(t => `${t}: ${h.pitchTypesSeen[t]}`).join(', ');
       return `<tr>
-        <td>${h.name}</td>
-        <td>${h.atBats}</td>
-        <td>${h.hits}-${h.atBats} (${avg})</td>
+        <td>${h.name} <span style="color: var(--text-muted); font-size: 0.8rem;">(${side})</span></td>
+        <td>${h.pa}</td>
+        <td>${h.hits}-${h.pa}</td>
         <td>${h.pitchesSeen}</td>
         <td style="font-size:0.8rem">${summary || '--'}</td>
       </tr>`;
@@ -786,18 +841,13 @@ function renderAllHittersSummary(hitterMap, data) {
   }
 
   let html = `<table class="stat-table">
-    <thead><tr><th>Hitter</th><th>AB</th><th>H-AB (AVG)</th><th>Pitches</th><th>Pitches by Type</th></tr></thead>
+    <thead><tr><th>Hitter</th><th>PA</th><th>H-PA</th><th>Pitches</th><th>Pitches by Type</th></tr></thead>
     <tbody>`;
 
-  html += `<tr class="team-divider"><td colspan="5">${awayName}</td></tr>`;
+  html += `<tr class="team-divider"><td colspan="5" style="border-left: 3px solid ${awayColor};">${awayName}</td></tr>`;
   html += buildRows(awayHitters);
-  html += `<tr class="team-divider"><td colspan="5">${homeName}</td></tr>`;
+  html += `<tr class="team-divider"><td colspan="5" style="border-left: 3px solid ${homeColor};">${homeName}</td></tr>`;
   html += buildRows(homeHitters);
-
-  if (otherHitters.length > 0) {
-    html += `<tr class="team-divider"><td colspan="5">Other</td></tr>`;
-    html += buildRows(otherHitters);
-  }
 
   html += '</tbody></table>';
   container.innerHTML = html;
