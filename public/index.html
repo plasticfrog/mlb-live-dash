@@ -4,32 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MLB Live Dash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header>
-    <h1>MLB Live Dash</h1>
-    <div id="status-bar">
-      <span id="last-update"></span>
-      <span id="auto-refresh-status">Auto-refresh: ON (10s)</span>
+    <div class="header-left">
+      <div class="logo">
+        <span class="logo-icon">&#9918;</span>
+        <h1>MLB Live Dash</h1>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="refresh-btn" title="Refresh now">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.65 2.35A7.95 7.95 0 008 0C3.58 0 .01 3.58.01 8S3.58 16 8 16c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 018 14 6 6 0 012 8a6 6 0 016-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z" fill="currentColor"/></svg>
+        <span>Refresh</span>
+      </button>
+      <div id="status-bar">
+        <span id="last-update"></span>
+        <div id="refresh-timer">
+          <div id="refresh-progress"></div>
+        </div>
+      </div>
     </div>
   </header>
 
   <main>
     <!-- Game Selector -->
     <section id="game-selector">
-      <h2>Today's Games</h2>
-      <div id="date-picker">
-        <button id="prev-day">&larr;</button>
-        <input type="date" id="game-date">
-        <button id="next-day">&rarr;</button>
+      <div class="section-header">
+        <h2>Schedule</h2>
+        <div id="date-picker">
+          <button id="prev-day">
+            <svg width="14" height="14" viewBox="0 0 14 14"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          </button>
+          <input type="date" id="game-date">
+          <button id="next-day">
+            <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          </button>
+        </div>
       </div>
       <div id="games-grid"></div>
     </section>
 
-    <!-- Game Dashboard (hidden until game selected) -->
+    <!-- Game Dashboard -->
     <section id="dashboard" class="hidden">
-      <button id="back-btn">&larr; All Games</button>
+      <div class="dash-toolbar">
+        <button id="back-btn">
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+          All Games
+        </button>
+      </div>
 
       <!-- Scoreboard -->
       <div id="scoreboard">
@@ -38,56 +65,65 @@
             <span class="team-name" id="away-name"></span>
             <span class="score" id="away-score"></span>
           </div>
-          <div id="game-state">
-            <span id="inning"></span>
+          <div id="game-center">
+            <div id="game-state">
+              <span id="inning"></span>
+              <span id="count"></span>
+            </div>
+            <div id="bases-display">
+              <svg viewBox="0 0 100 80" width="80" height="64">
+                <rect id="base-2" class="base-shape" x="39" y="2" width="22" height="22" rx="2" transform="rotate(45 50 13)"/>
+                <rect id="base-3" class="base-shape" x="14" y="27" width="22" height="22" rx="2" transform="rotate(45 25 38)"/>
+                <rect id="base-1" class="base-shape" x="64" y="27" width="22" height="22" rx="2" transform="rotate(45 75 38)"/>
+              </svg>
+            </div>
             <span id="outs"></span>
-            <span id="count"></span>
           </div>
           <div class="team-score home">
-            <span class="team-name" id="home-name"></span>
             <span class="score" id="home-score"></span>
+            <span class="team-name" id="home-name"></span>
           </div>
         </div>
         <div id="linescore-container"></div>
-        <div id="bases-display">
-          <div class="diamond">
-            <div class="base" id="base-2"></div>
-            <div class="base" id="base-3"></div>
-            <div class="base" id="base-1"></div>
-          </div>
-        </div>
       </div>
 
       <!-- Matchup -->
       <div id="matchup-bar">
-        <span id="current-pitcher"></span>
-        <span>vs</span>
-        <span id="current-batter"></span>
+        <div class="matchup-player pitcher">
+          <span class="matchup-label">PITCHING</span>
+          <span class="matchup-name" id="current-pitcher">--</span>
+        </div>
+        <div class="matchup-vs">VS</div>
+        <div class="matchup-player batter">
+          <span class="matchup-label">AT BAT</span>
+          <span class="matchup-name" id="current-batter">--</span>
+        </div>
       </div>
 
       <!-- Stat Panels -->
       <div id="stat-panels">
-        <!-- Pitcher Stats -->
         <div class="panel" id="pitcher-panel">
-          <h3>Pitcher Stats</h3>
+          <div class="panel-header"><h3>Current Pitcher</h3></div>
           <div id="pitcher-stats-content"></div>
         </div>
 
-        <!-- Hitter Stats -->
         <div class="panel" id="hitter-panel">
-          <h3>Hitter Stats</h3>
+          <div class="panel-header"><h3>Current Batter</h3></div>
           <div id="hitter-stats-content"></div>
         </div>
 
-        <!-- All Pitchers Summary -->
+        <div class="panel wide" id="risp-panel">
+          <div class="panel-header"><h3>RISP by Pitcher</h3></div>
+          <div id="risp-content"></div>
+        </div>
+
         <div class="panel wide" id="all-pitchers-panel">
-          <h3>All Pitchers - Game Summary</h3>
+          <div class="panel-header"><h3>Pitching Game Log</h3></div>
           <div id="all-pitchers-content"></div>
         </div>
 
-        <!-- All Hitters Summary -->
         <div class="panel wide" id="all-hitters-panel">
-          <h3>All Hitters - Pitches Seen</h3>
+          <div class="panel-header"><h3>Hitting - Pitches Seen</h3></div>
           <div id="all-hitters-content"></div>
         </div>
       </div>
