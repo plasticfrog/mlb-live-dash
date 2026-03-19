@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MLB Live Dash</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>MLB Live Dash</h1>
+    <div id="status-bar">
+      <span id="last-update"></span>
+      <span id="auto-refresh-status">Auto-refresh: ON (10s)</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Game Selector -->
+    <section id="game-selector">
+      <h2>Today's Games</h2>
+      <div id="date-picker">
+        <button id="prev-day">&larr;</button>
+        <input type="date" id="game-date">
+        <button id="next-day">&rarr;</button>
+      </div>
+      <div id="games-grid"></div>
+    </section>
+
+    <!-- Game Dashboard (hidden until game selected) -->
+    <section id="dashboard" class="hidden">
+      <button id="back-btn">&larr; All Games</button>
+
+      <!-- Scoreboard -->
+      <div id="scoreboard">
+        <div id="score-header">
+          <div class="team-score away">
+            <span class="team-name" id="away-name"></span>
+            <span class="score" id="away-score"></span>
+          </div>
+          <div id="game-state">
+            <span id="inning"></span>
+            <span id="outs"></span>
+            <span id="count"></span>
+          </div>
+          <div class="team-score home">
+            <span class="team-name" id="home-name"></span>
+            <span class="score" id="home-score"></span>
+          </div>
+        </div>
+        <div id="linescore-container"></div>
+        <div id="bases-display">
+          <div class="diamond">
+            <div class="base" id="base-2"></div>
+            <div class="base" id="base-3"></div>
+            <div class="base" id="base-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matchup -->
+      <div id="matchup-bar">
+        <span id="current-pitcher"></span>
+        <span>vs</span>
+        <span id="current-batter"></span>
+      </div>
+
+      <!-- Stat Panels -->
+      <div id="stat-panels">
+        <!-- Pitcher Stats -->
+        <div class="panel" id="pitcher-panel">
+          <h3>Pitcher Stats</h3>
+          <div id="pitcher-stats-content"></div>
+        </div>
+
+        <!-- Hitter Stats -->
+        <div class="panel" id="hitter-panel">
+          <h3>Hitter Stats</h3>
+          <div id="hitter-stats-content"></div>
+        </div>
+
+        <!-- All Pitchers Summary -->
+        <div class="panel wide" id="all-pitchers-panel">
+          <h3>All Pitchers - Game Summary</h3>
+          <div id="all-pitchers-content"></div>
+        </div>
+
+        <!-- All Hitters Summary -->
+        <div class="panel wide" id="all-hitters-panel">
+          <h3>All Hitters - Pitches Seen</h3>
+          <div id="all-hitters-content"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
