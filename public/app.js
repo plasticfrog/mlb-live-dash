@@ -4,27 +4,37 @@
 
 let currentGamePk = null;
 let refreshInterval = null;
-let timerInterval = null;
 const REFRESH_MS = 16000;
-let lastRefreshTime = 0;
+
+// Track which pitcher detail rows are expanded (by pitcher ID)
+const expandedPitchers = new Set();
 
 // ---- DOM ----
 const dateInput = document.getElementById('game-date');
-const today = new Date().toISOString().split('T')[0];
-dateInput.value = today;
+
+// Fix timezone issue: use local date parts instead of ISO which can shift to next day
+const now = new Date();
+const todayStr = now.getFullYear() + '-' +
+  String(now.getMonth() + 1).padStart(2, '0') + '-' +
+  String(now.getDate()).padStart(2, '0');
+dateInput.value = todayStr;
 
 // ---- Date Navigation ----
 document.getElementById('prev-day').addEventListener('click', () => {
-  const d = new Date(dateInput.value);
+  const d = new Date(dateInput.value + 'T12:00:00');
   d.setDate(d.getDate() - 1);
-  dateInput.value = d.toISOString().split('T')[0];
+  dateInput.value = d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
   loadSchedule();
 });
 
 document.getElementById('next-day').addEventListener('click', () => {
-  const d = new Date(dateInput.value);
+  const d = new Date(dateInput.value + 'T12:00:00');
   d.setDate(d.getDate() + 1);
-  dateInput.value = d.toISOString().split('T')[0];
+  dateInput.value = d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
   loadSchedule();
 });
 
@@ -33,6 +43,7 @@ dateInput.addEventListener('change', loadSchedule);
 // ---- Back Button ----
 document.getElementById('back-btn').addEventListener('click', () => {
   currentGamePk = null;
+  expandedPitchers.clear();
   stopAutoRefresh();
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('game-selector').classList.remove('hidden');
@@ -43,30 +54,13 @@ document.getElementById('back-btn').addEventListener('click', () => {
 document.getElementById('refresh-btn').addEventListener('click', () => {
   if (currentGamePk) {
     loadGameData();
-    resetTimer();
   } else {
     loadSchedule();
   }
 });
 
-// ---- Timer Bar ----
-function resetTimer() {
-  lastRefreshTime = Date.now();
-}
-
-function startTimerBar() {
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    const elapsed = Date.now() - lastRefreshTime;
-    const pct = Math.max(0, 100 - (elapsed / REFRESH_MS) * 100);
-    document.getElementById('refresh-progress').style.width = pct + '%';
-  }, 200);
-}
-
 function stopAutoRefresh() {
   clearInterval(refreshInterval);
-  clearInterval(timerInterval);
-  document.getElementById('refresh-progress').style.width = '100%';
 }
 
 // ============================================================
@@ -159,17 +153,15 @@ async function loadSchedule() {
 
 function selectGame(gamePk) {
   currentGamePk = gamePk;
+  expandedPitchers.clear();
   document.getElementById('game-selector').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   loadGameData();
 
   stopAutoRefresh();
-  resetTimer();
   refreshInterval = setInterval(() => {
     loadGameData();
-    resetTimer();
   }, REFRESH_MS);
-  startTimerBar();
 }
 
 async function loadGameData() {
@@ -214,7 +206,6 @@ function renderScoreboard(data) {
     document.getElementById('count').textContent = '';
   }
 
-  // Bases (SVG)
   const offense = ls?.offense || {};
   setBase('base-1', !!offense.first);
   setBase('base-2', !!offense.second);
@@ -276,13 +267,8 @@ function renderMatchup(data) {
 function computeAndRenderStats(data) {
   const allPlays = data.liveData?.plays?.allPlays || [];
 
-  // pitcherId -> stats
   const pitcherMap = {};
-  // batterId -> stats
   const hitterMap = {};
-  // RISP tracking by pitcher
-  const rispMap = {};
-  // Team RISP
   const teamRisp = { away: { ab: 0, hits: 0 }, home: { ab: 0, hits: 0 } };
 
   const awayId = data.gameData?.teams?.away?.id;
@@ -297,7 +283,6 @@ function computeAndRenderStats(data) {
 
     if (!pitcherId || !batterId) return;
 
-    // Init pitcher
     if (!pitcherMap[pitcherId]) {
       pitcherMap[pitcherId] = {
         id: pitcherId,
@@ -307,25 +292,25 @@ function computeAndRenderStats(data) {
         pitchTypeCounts: {},
         pitchTypeHits: {},
         pitchTypeABs: {},
-        pitchTypeDetails: {}, // type -> { balls, calledStrikes, swingingStrikes, fouls, inPlay, swings, whiffs }
+        pitchTypeDetails: {},
+        pitchTypeStrikeouts: {}, // pitch type -> strikeout count
         threeBallCounts: 0,
         fullCounts: 0,
         totalPitches: 0,
+        strikeouts: 0,
         rispAB: 0,
         rispHits: 0
       };
     }
 
-    // Init hitter
     if (!hitterMap[batterId]) {
       hitterMap[batterId] = { name: batterName, pitchesSeen: 0, pitchTypesSeen: {} };
     }
 
     const p = pitcherMap[pitcherId];
-    const h = hitterMap[batterId];
+    const hitter = hitterMap[batterId];
     const events = play.playEvents || [];
 
-    // Check RISP: runner on 2nd or 3rd at start of AB
     const hasRisp = play.runners?.some(r => {
       const startBase = r.movement?.start;
       return startBase === '2B' || startBase === '3B';
@@ -346,11 +331,10 @@ function computeAndRenderStats(data) {
       const code = evt.details?.code || '';
 
       p.totalPitches++;
-      h.pitchesSeen++;
+      hitter.pitchesSeen++;
       p.pitchTypeCounts[pitchType] = (p.pitchTypeCounts[pitchType] || 0) + 1;
-      h.pitchTypesSeen[pitchType] = (h.pitchTypesSeen[pitchType] || 0) + 1;
+      hitter.pitchTypesSeen[pitchType] = (hitter.pitchTypesSeen[pitchType] || 0) + 1;
 
-      // Init pitch type detail
       if (!p.pitchTypeDetails[pitchType]) {
         p.pitchTypeDetails[pitchType] = {
           balls: 0, calledStrikes: 0, swingingStrikes: 0, fouls: 0,
@@ -360,7 +344,6 @@ function computeAndRenderStats(data) {
       const d = p.pitchTypeDetails[pitchType];
       d.total++;
 
-      // Classify pitch outcome
       const ballCodes = ['B', 'I', 'P', 'V'];
       const calledStrikeCodes = ['C'];
       const swingStrikeCodes = ['S', 'T', 'M', 'O', 'Q', 'R', 'W'];
@@ -383,7 +366,6 @@ function computeAndRenderStats(data) {
         d.swings++;
       }
 
-      // First pitch strike
       if (isFirstPitch) {
         p.firstPitchTotal++;
         const strikeCodes = ['C', 'S', 'F', 'T', 'L', 'M', 'O', 'Q', 'R', 'W', 'X', 'D', 'E'];
@@ -391,7 +373,6 @@ function computeAndRenderStats(data) {
         isFirstPitch = false;
       }
 
-      // Count tracking
       if (ballCodes.includes(code)) {
         balls++;
       } else if (!foulCodes.includes(code) || strikes < 2) {
@@ -406,6 +387,7 @@ function computeAndRenderStats(data) {
     // Result tracking
     const result = play.result?.event || '';
     const isHit = ['Single', 'Double', 'Triple', 'Home Run'].includes(result);
+    const isStrikeout = result === 'Strikeout' || result === 'Strikeout Double Play';
     const nonABEvents = ['Walk', 'Hit By Pitch', 'Intent Walk', 'Sac Bunt', 'Sac Fly',
                          'Catcher Interference', 'Fan interference'];
     const isAB = result !== '' && !nonABEvents.includes(result);
@@ -415,12 +397,16 @@ function computeAndRenderStats(data) {
       if (isHit) p.pitchTypeHits[lastPitchType] = (p.pitchTypeHits[lastPitchType] || 0) + 1;
     }
 
+    // Strikeout pitch tracking
+    if (isStrikeout && lastPitchType) {
+      p.strikeouts++;
+      p.pitchTypeStrikeouts[lastPitchType] = (p.pitchTypeStrikeouts[lastPitchType] || 0) + 1;
+    }
+
     // RISP
     if (hasRisp && isAB) {
       p.rispAB++;
       if (isHit) p.rispHits++;
-
-      // Team RISP
       if (batterTeamId === awayId) { teamRisp.away.ab++; if (isHit) teamRisp.away.hits++; }
       else if (batterTeamId === homeId) { teamRisp.home.ab++; if (isHit) teamRisp.home.hits++; }
     }
@@ -434,7 +420,6 @@ function computeAndRenderStats(data) {
 }
 
 function getBatterTeamId(play, data) {
-  // Determine batter's team from the batting side
   const side = play.about?.halfInning;
   if (side === 'top') return data.gameData?.teams?.away?.id;
   if (side === 'bottom') return data.gameData?.teams?.home?.id;
@@ -457,6 +442,13 @@ function renderPitcherPanel(pitcherMap, data) {
   const p = pitcherMap[id];
   const fpsRate = p.firstPitchTotal > 0 ? ((p.firstPitchStrikes / p.firstPitchTotal) * 100).toFixed(0) : '--';
   const fpsClass = fpsRate !== '--' ? (fpsRate >= 65 ? 'stat-good' : fpsRate >= 50 ? 'stat-warn' : 'stat-bad') : '';
+
+  // Strikeout pitch breakdown
+  let kPitchHtml = '';
+  if (p.strikeouts > 0) {
+    const kTypes = Object.keys(p.pitchTypeStrikeouts).sort((a, b) => p.pitchTypeStrikeouts[b] - p.pitchTypeStrikeouts[a]);
+    kPitchHtml = kTypes.map(t => `${t}: ${p.pitchTypeStrikeouts[t]}`).join(', ');
+  }
 
   let pitchTypeHtml = '';
   const types = Object.keys(p.pitchTypeCounts).sort((a, b) => p.pitchTypeCounts[b] - p.pitchTypeCounts[a]);
@@ -500,10 +492,15 @@ function renderPitcherPanel(pitcherMap, data) {
         <span class="stat-label">Pitches</span>
       </div>
       <div class="stat-box">
+        <span class="stat-value">${p.strikeouts}</span>
+        <span class="stat-label">K</span>
+      </div>
+      <div class="stat-box">
         <span class="stat-value">${p.rispAB > 0 ? p.rispHits + '/' + p.rispAB : '--'}</span>
         <span class="stat-label">RISP</span>
       </div>
     </div>
+    ${p.strikeouts > 0 ? `<div class="pitch-section-title">Strikeout Pitches (${p.strikeouts} K)</div><div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px; font-family: var(--font-mono);">${kPitchHtml}</div>` : ''}
     <div class="pitch-section-title">Hit Rate by Pitch Type (H-AB) (Thrown)</div>
     ${pitchTypeHtml || '<div class="no-data">No pitch data</div>'}
   `;
@@ -596,7 +593,7 @@ function renderRISP(pitcherMap, teamRisp, data) {
 }
 
 // ============================================================
-// ALL PITCHERS — EXPANDABLE
+// ALL PITCHERS — EXPANDABLE (persists across refreshes)
 // ============================================================
 
 function renderAllPitchersSummary(pitcherMap) {
@@ -608,26 +605,27 @@ function renderAllPitchersSummary(pitcherMap) {
     return;
   }
 
-  let rows = pitchers.map((p, idx) => {
+  let rows = pitchers.map(p => {
     const fpsRate = p.firstPitchTotal > 0 ? ((p.firstPitchStrikes / p.firstPitchTotal) * 100).toFixed(0) + '%' : '--';
     const fpsClass = p.firstPitchTotal > 0
       ? ((p.firstPitchStrikes / p.firstPitchTotal) * 100 >= 65 ? 'stat-good' : (p.firstPitchStrikes / p.firstPitchTotal) * 100 >= 50 ? 'stat-warn' : 'stat-bad')
       : '';
 
-    // Build the expandable detail section
+    const isExpanded = expandedPitchers.has(p.id);
     const detailHtml = buildPitcherDetail(p);
 
     return `
-      <tr class="pitcher-row-clickable" data-idx="${idx}" onclick="togglePitcherDetail(this)">
+      <tr class="pitcher-row-clickable ${isExpanded ? 'expanded' : ''}" data-pitcher-id="${p.id}" onclick="togglePitcherDetail(this)">
         <td>${p.name}</td>
         <td>${p.totalPitches}</td>
         <td class="${fpsClass}">${fpsRate}</td>
         <td>${p.threeBallCounts}</td>
         <td>${p.fullCounts}</td>
+        <td>${p.strikeouts}</td>
         <td>${p.rispAB > 0 ? p.rispHits + '/' + p.rispAB : '--'}</td>
       </tr>
-      <tr class="pitcher-detail-row" data-detail="${idx}">
-        <td colspan="6">${detailHtml}</td>
+      <tr class="pitcher-detail-row ${isExpanded ? 'visible' : ''}" data-detail-pitcher="${p.id}">
+        <td colspan="7">${detailHtml}</td>
       </tr>`;
   }).join('');
 
@@ -640,6 +638,7 @@ function renderAllPitchersSummary(pitcherMap) {
           <th>FPS%</th>
           <th>3-Ball</th>
           <th>3-2</th>
+          <th>K</th>
           <th>RISP</th>
         </tr>
       </thead>
@@ -653,7 +652,18 @@ function buildPitcherDetail(p) {
 
   if (types.length === 0) return '<div class="pitcher-detail-content"><div class="no-data">No pitch data</div></div>';
 
-  // Pitch type breakdown table
+  // Strikeout pitch summary
+  let kSummary = '';
+  if (p.strikeouts > 0) {
+    const kTypes = Object.keys(p.pitchTypeStrikeouts).sort((a, b) => p.pitchTypeStrikeouts[b] - p.pitchTypeStrikeouts[a]);
+    kSummary = `<div style="margin-bottom: 12px;">
+      <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Strikeout Pitches (${p.strikeouts} K)</span>
+      <div style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 4px; font-family: var(--font-mono);">
+        ${kTypes.map(t => `${t}: ${p.pitchTypeStrikeouts[t]}`).join(' &nbsp;|&nbsp; ')}
+      </div>
+    </div>`;
+  }
+
   let pitchRows = types.map(type => {
     const d = p.pitchTypeDetails[type];
     const totalStrikes = d.calledStrikes + d.swingingStrikes + d.fouls + d.inPlay;
@@ -661,6 +671,7 @@ function buildPitcherDetail(p) {
     const whiffRate = d.swings > 0 ? ((d.whiffs / d.swings) * 100).toFixed(0) : '--';
     const hits = p.pitchTypeHits[type] || 0;
     const abs = p.pitchTypeABs[type] || 0;
+    const kOnPitch = p.pitchTypeStrikeouts[type] || 0;
 
     return `<tr>
       <td>${type}</td>
@@ -671,13 +682,15 @@ function buildPitcherDetail(p) {
       <td>${d.fouls}</td>
       <td>${d.inPlay}</td>
       <td>${strikePct}%</td>
-      <td>${d.swings > 0 ? whiffRate + '%' : '--'}</td>
+      <td>${d.swings > 0 ? d.whiffs + '/' + d.swings + ' (' + whiffRate + '%)' : '--'}</td>
       <td>${abs > 0 ? hits + '-' + abs : '--'}</td>
+      <td>${kOnPitch > 0 ? kOnPitch : '--'}</td>
     </tr>`;
   }).join('');
 
   return `
     <div class="pitcher-detail-content">
+      ${kSummary}
       <div class="detail-section">
         <h4>Pitch Arsenal Breakdown</h4>
         <div style="overflow-x: auto;">
@@ -694,6 +707,7 @@ function buildPitcherDetail(p) {
                 <th>Strike%</th>
                 <th>Whiff%</th>
                 <th>H-AB</th>
+                <th>K On</th>
               </tr>
             </thead>
             <tbody>${pitchRows}</tbody>
@@ -703,15 +717,22 @@ function buildPitcherDetail(p) {
     </div>`;
 }
 
-// Toggle expand/collapse
+// Toggle uses pitcher ID so it persists across re-renders
 function togglePitcherDetail(row) {
-  const idx = row.dataset.idx;
-  const detailRow = document.querySelector(`tr[data-detail="${idx}"]`);
-  row.classList.toggle('expanded');
-  detailRow.classList.toggle('visible');
+  const pitcherId = Number(row.dataset.pitcherId);
+  const detailRow = document.querySelector(`tr[data-detail-pitcher="${pitcherId}"]`);
+
+  if (expandedPitchers.has(pitcherId)) {
+    expandedPitchers.delete(pitcherId);
+    row.classList.remove('expanded');
+    detailRow.classList.remove('visible');
+  } else {
+    expandedPitchers.add(pitcherId);
+    row.classList.add('expanded');
+    detailRow.classList.add('visible');
+  }
 }
 
-// Make togglePitcherDetail global
 window.togglePitcherDetail = togglePitcherDetail;
 
 // ============================================================
