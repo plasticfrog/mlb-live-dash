@@ -162,6 +162,11 @@ async function loadSchedule() {
       const awayWinning = Number(awayRuns) > Number(homeRuns);
       const homeWinning = Number(homeRuns) > Number(awayRuns);
 
+      const awayTeamId = away?.team?.id;
+      const homeTeamId = home?.team?.id;
+      const awayColor = getTeamColor(awayTeamId);
+      const homeColor = getTeamColor(homeTeamId);
+
       card.innerHTML = `
         <div class="card-top">
           <span class="card-status ${statusClass}">${statusText}</span>
@@ -169,11 +174,11 @@ async function loadSchedule() {
         </div>
         <div class="card-teams">
           <div class="card-team-row ${hasScore && awayWinning ? 'winning' : hasScore ? 'losing' : ''}">
-            <span class="card-team-name">${awayName}</span>
+            <span class="card-team-name" style="color: ${awayColor};">${awayName}</span>
             <span class="card-team-score">${hasScore ? awayRuns : ''}</span>
           </div>
           <div class="card-team-row ${hasScore && homeWinning ? 'winning' : hasScore ? 'losing' : ''}">
-            <span class="card-team-name">${homeName}</span>
+            <span class="card-team-name" style="color: ${homeColor};">${homeName}</span>
             <span class="card-team-score">${hasScore ? homeRuns : ''}</span>
           </div>
         </div>
@@ -273,6 +278,8 @@ function renderLinescoreTable(ls, gd) {
 
   const awayAbbr = gd?.teams?.away?.abbreviation || 'AWAY';
   const homeAbbr = gd?.teams?.home?.abbreviation || 'HOME';
+  const awayLsColor = getTeamColor(gd?.teams?.away?.id);
+  const homeLsColor = getTeamColor(gd?.teams?.home?.id);
   const cur = ls.currentInning || 0;
 
   let h = '<table class="linescore-table"><thead><tr><th></th>';
@@ -281,8 +288,9 @@ function renderLinescoreTable(ls, gd) {
   });
   h += '<th class="totals">R</th><th class="totals">H</th><th class="totals">E</th></tr></thead><tbody>';
 
-  [['away', awayAbbr], ['home', homeAbbr]].forEach(([side, abbr]) => {
-    h += `<tr><td><strong>${abbr}</strong></td>`;
+  const sideData = [['away', awayAbbr, awayLsColor], ['home', homeAbbr, homeLsColor]];
+  sideData.forEach(([side, abbr, color]) => {
+    h += `<tr><td><strong style="color: ${color};">${abbr}</strong></td>`;
     ls.innings.forEach(inn => {
       h += `<td class="${inn.num === cur ? 'current-inning' : ''}">${inn[side]?.runs ?? ''}</td>`;
     });
@@ -844,9 +852,9 @@ function renderAllHittersSummary(hitterMap, data) {
     <thead><tr><th>Hitter</th><th>PA</th><th>H-PA</th><th>Pitches</th><th>Pitches by Type</th></tr></thead>
     <tbody>`;
 
-  html += `<tr class="team-divider"><td colspan="5" style="border-left: 3px solid ${awayColor};">${awayName}</td></tr>`;
+  html += `<tr class="team-divider"><td colspan="5" style="border-left: 4px solid ${awayColor}; color: ${awayColor};">${awayName}</td></tr>`;
   html += buildRows(awayHitters);
-  html += `<tr class="team-divider"><td colspan="5" style="border-left: 3px solid ${homeColor};">${homeName}</td></tr>`;
+  html += `<tr class="team-divider"><td colspan="5" style="border-left: 4px solid ${homeColor}; color: ${homeColor};">${homeName}</td></tr>`;
   html += buildRows(homeHitters);
 
   html += '</tbody></table>';
