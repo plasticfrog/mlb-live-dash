@@ -683,6 +683,14 @@ main {
   font-weight: 500;
 }
 
+.detail-table .totals-row td {
+  border-top: 2px solid var(--border-light);
+  border-bottom: none;
+  background: rgba(255, 255, 255, 0.04);
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 /* ---- RISP Table ---- */
 .risp-table {
   width: 100%;

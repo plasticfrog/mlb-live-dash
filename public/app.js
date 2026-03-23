@@ -739,6 +739,10 @@ function buildPitcherDetail(p) {
     </div>`;
   }
 
+  // Accumulate totals across all pitch types
+  let totBalls = 0, totCalledK = 0, totSwingK = 0, totFouls = 0, totInPlay = 0, totTotal = 0;
+  let totSwings = 0, totWhiffs = 0, totHits = 0, totABs = 0, totKOn = 0;
+
   let pitchRows = types.map(type => {
     const d = p.pitchTypeDetails[type];
     const totalStrikes = d.calledStrikes + d.swingingStrikes + d.fouls + d.inPlay;
@@ -747,6 +751,10 @@ function buildPitcherDetail(p) {
     const hits = p.pitchTypeHits[type] || 0;
     const abs = p.pitchTypeABs[type] || 0;
     const kOnPitch = p.pitchTypeStrikeouts[type] || 0;
+
+    totTotal += d.total; totBalls += d.balls; totCalledK += d.calledStrikes;
+    totSwingK += d.swingingStrikes; totFouls += d.fouls; totInPlay += d.inPlay;
+    totSwings += d.swings; totWhiffs += d.whiffs; totHits += hits; totABs += abs; totKOn += kOnPitch;
 
     return `<tr>
       <td>${type}</td>
@@ -762,6 +770,24 @@ function buildPitcherDetail(p) {
       <td>${kOnPitch > 0 ? kOnPitch : '--'}</td>
     </tr>`;
   }).join('');
+
+  // Add totals row
+  const totStrikesAll = totCalledK + totSwingK + totFouls + totInPlay;
+  const totStrikePct = totTotal > 0 ? ((totStrikesAll / totTotal) * 100).toFixed(0) : 0;
+  const totWhiffRate = totSwings > 0 ? ((totWhiffs / totSwings) * 100).toFixed(0) : '--';
+  pitchRows += `<tr class="totals-row">
+    <td><strong>TOTAL</strong></td>
+    <td><strong>${totTotal}</strong></td>
+    <td><strong>${totBalls}</strong></td>
+    <td><strong>${totCalledK}</strong></td>
+    <td><strong>${totSwingK}</strong></td>
+    <td><strong>${totFouls}</strong></td>
+    <td><strong>${totInPlay}</strong></td>
+    <td><strong>${totStrikePct}%</strong></td>
+    <td><strong>${totSwings > 0 ? totWhiffs + '/' + totSwings + ' (' + totWhiffRate + '%)' : '--'}</strong></td>
+    <td><strong>${totABs > 0 ? totHits + '-' + totABs : '--'}</strong></td>
+    <td><strong>${totKOn > 0 ? totKOn : '--'}</strong></td>
+  </tr>`;
 
   return `
     <div class="pitcher-detail-content">
